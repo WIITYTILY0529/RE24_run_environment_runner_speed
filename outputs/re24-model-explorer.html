@@ -198,7 +198,7 @@ function option(select, value, text) {
   const o = document.createElement("option"); o.value = value; o.textContent = text; select.append(o);
 }
 for (let v = 230; v <= 420; v += 10) option($("woba"), (v / 1000).toFixed(3), "." + v);
-$("woba").value = "0.350";
+$("woba").value = "0.320";
 const trainLow = Math.min(...D.train_rpg), trainHigh = Math.max(...D.train_rpg);
 for (let r = D.rpg_low; r <= D.rpg_high + 1e-9; r += D.rpg_unit) {
   const outside = r < trainLow - 1e-9 || r > trainHigh + 1e-9;
