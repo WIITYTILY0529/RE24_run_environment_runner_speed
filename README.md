@@ -2,9 +2,11 @@
 
 This project estimates how many runs the batting team will score **from the first pitch of a plate appearance through the end of that half-inning**. The final model adjusts the estimate for batter wOBA, the scoring environment, and the Sprint Speed of each runner already on base.
 
+**▶ [Open the interactive explorer](https://wiitytily0529.github.io/RE24_run_environment_runner_speed/outputs/re24-model-explorer.html)**
+
 ## Open the final HTML
 
-Open [re24-model-explorer.html](outputs/re24-model-explorer.html) in a browser. It needs no Python or server; only the web fonts need a connection.
+Open the [live page](https://wiitytily0529.github.io/RE24_run_environment_runner_speed/outputs/re24-model-explorer.html) on GitHub Pages. Clicking the file in the GitHub file list shows its source code instead. To run it locally, open [re24-model-explorer.html](outputs/re24-model-explorer.html) in a browser. It needs no Python or server; only the web fonts need a connection.
 
 1. Pick a model at the top: the final 75-term model, the 99-term model with wOBA × RPG, or the 100-term model with both wOBA × RPG and speed × RPG. A link can open a specific model with `#final-75`, `#woba-rpg-99`, or `#both-100`.
 2. Click the bases on the diamond to add or remove runners, and select **0**, **1**, or **2** outs.
