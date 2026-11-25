@@ -4,19 +4,17 @@ This project estimates how many runs the batting team will score **from the firs
 
 ## Open the final HTML
 
-Open [re24-rounded-explorer.html](outputs/re24-rounded-explorer.html) in a browser. It is a self-contained file that works offline without Python or a server.
+Open [re24-model-explorer.html](outputs/re24-model-explorer.html) in a browser. It needs no Python or server; only the web fonts need a connection.
 
-1. Click the bases on the diamond to add or remove runners, and select **0**, **1**, or **2** outs.
-2. Choose **regressed batter wOBA** in **.010** steps and **team RPG** from **3.75 to 5.00** in **0.25** steps. RPG means runs per **team** per game.
-3. Set the Sprint Speed of each occupied runner in **1 ft/s** steps. Only occupied bases show a speed selector. For a runner whose speed is unknown, choose the training average, about 27 ft/s.
-4. Compare **Observed 2025 RE24** with the **Model prediction**. The observed value averages eligible 2025 starts in the selected base-out state across batters and scoring environments. The prediction uses the settings you choose.
-5. Switch between **Table** and **Graph** to see the contributions to the difference. **What one step adds** shows the predicted change from +.010 wOBA, or from +1 ft/s for one runner, holding the other settings fixed.
+1. Pick a model at the top: the final 75-term model, the 99-term model with wOBA × RPG, or the 100-term model with both wOBA × RPG and speed × RPG. A link can open a specific model with `#final-75`, `#woba-rpg-99`, or `#both-100`.
+2. Click the bases on the diamond to add or remove runners, and select **0**, **1**, or **2** outs.
+3. Choose **regressed batter wOBA** in **.010** steps and **team RPG** from **3.75 to 5.00** in **0.25** steps. RPG means runs per **team** per game.
+4. Set the Sprint Speed of each occupied runner in **1 ft/s** steps. Only occupied bases show a speed selector. For a runner whose speed is unknown, choose the training average, about 27 ft/s.
+5. Compare **Observed 2025** with the **Model prediction**. The observed value averages eligible 2025 starts in the selected base-out state across batters and scoring environments. The prediction uses the settings you choose.
+6. Switch between **Table** and **Graph** to see the contributions to the difference. **What one step adds** shows the predicted change from +.010 wOBA, or from +1 ft/s for one runner, holding the other settings fixed.
+7. The table under the result shows all three models' predictions and step values for the current situation. Change RPG between 4.00 and 4.75 to see the two interaction models change while the final model stays fixed.
 
-The breakdown uses .320 wOBA as a display reference. The model fit uses raw regressed wOBA in .010 units. The **3.75** and **5.00 RPG** options are marked extrapolated because the 2022–24 training data contain four rounded levels from **4.00 to 4.75**.
-
-### Three-model explorer
-
-[re24-model-explorer.html](outputs/re24-model-explorer.html) has the same controls, plus a selector for three models: the final 75-term model, the 99-term model with wOBA × RPG, and the 100-term model with both wOBA × RPG and speed × RPG. A table under the result shows all three models' predictions and step values for the current situation. Change RPG between 4.00 and 4.75 to see the two interaction models change while the final model stays fixed. A link can open a specific model with `#final-75`, `#woba-rpg-99`, or `#both-100`.
+The breakdown uses .320 wOBA as a display reference. The model fit uses raw regressed wOBA in .010 units. The **3.75** and **5.00 RPG** options are marked as outside the training data because the 2022–24 training data contain four rounded levels from **4.00 to 4.75**.
 
 `re24_compare.py` refreshes this file's embedded data on every run from `explorer_models.json`, so it always matches the latest fit. The page is also published as a private claude.ai artifact; share it from the page's Share menu.
 
