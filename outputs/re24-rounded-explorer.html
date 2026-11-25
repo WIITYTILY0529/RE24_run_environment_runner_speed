@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rounded-input RE24 Explorer</title>
+<style>
+:root{color-scheme:light;--ink:#142821;--green:#176044;--soft:#e4efe7;--line:#d8e4da;--muted:#4a6358;font-family:system-ui,sans-serif;color:var(--ink);background:#edf3ee}
+*{box-sizing:border-box}body{margin:0}main{width:min(960px,calc(100% - 32px));margin:36px auto}h1,h2,p{margin:0}h1{font:700 clamp(2rem,6vw,3.4rem) Georgia,serif;letter-spacing:-.045em}h2{font-size:1.14rem;margin:0 0 13px}.intro{color:var(--muted);margin:8px 0 23px}.panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:16px}.inputs{display:grid;grid-template-columns:240px 1fr;gap:22px;align-items:center}.field{position:relative;height:180px;width:220px;margin:auto}.base{position:absolute;width:45px;height:45px;transform:rotate(45deg);background:var(--soft);border:1px solid #769682;border-radius:4px}.base span{display:block;transform:rotate(-45deg);font-weight:750}.base[aria-pressed=true]{background:var(--green);color:white}.b1{left:151px;top:65px}.b2{left:88px;top:13px}.b3{left:25px;top:65px}.home{position:absolute;left:93px;top:124px;width:35px;height:33px;background:#71837b;clip-path:polygon(0 0,100% 0,100% 60%,50% 100%,0 60%)}.out-row{display:flex;gap:8px;align-items:center;justify-content:center}.out-row span{margin-right:4px;font-weight:650}.out-row button,.tabs button{border:1px solid #9ab3a3;background:white;color:var(--ink);border-radius:8px;padding:8px 12px;min-height:42px;font:inherit}.out-row button[aria-pressed=true],.tabs button[aria-pressed=true]{background:var(--green);border-color:var(--green);color:white}button,select{cursor:pointer}button:focus-visible,select:focus-visible{outline:3px solid #be7d29;outline-offset:3px}.selectors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}label{display:block;font-weight:650;font-size:.92rem}select{display:block;width:100%;padding:9px;margin-top:5px;border:1px solid #9ab3a3;border-radius:8px;background:#fff;color:var(--ink);font:inherit}.runner[hidden]{display:none}.quiet{color:var(--muted);font-size:.88rem;margin-top:10px}.score{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0 18px;background:var(--soft);padding:14px;border-radius:12px}.score span{display:block;color:var(--muted);font-size:.83rem}.score strong{font-size:clamp(1.24rem,4vw,2rem);font-variant-numeric:tabular-nums}.result-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.result-head h2{margin:0}.tabs{display:flex;gap:5px}table{width:100%;border-collapse:collapse;font-size:.94rem}th,td{text-align:left;padding:9px 4px;border-bottom:1px solid var(--line)}td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.plot{display:grid;gap:6px}.plot-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(80px,1.2fr) 66px;align-items:center;gap:8px;font-size:.86rem;min-height:34px}.track{height:17px;position:relative;background:#edf2ee}.track:before{content:"";position:absolute;left:50%;height:100%;width:1px;background:#647b70}.bar{position:absolute;height:100%;background:var(--green)}.bar.negative{background:#9c4c36}.plot-value{text-align:right;font-variant-numeric:tabular-nums}[hidden]{display:none!important}
+@media(max-width:630px){.inputs{grid-template-columns:1fr}.panel{padding:16px}.field{height:160px}main{margin:20px auto}}@media(max-width:370px){.selectors{grid-template-columns:1fr}.plot-row{grid-template-columns:1fr 72px 53px}}
+</style>
+</head>
+<body><main>
+<h1>Rounded-input RE24 Explorer</h1>
+<p class="intro">Select a base-out state and see how the batter, scoring environment, and each runner change expected runs.</p>
+<section class="panel inputs" aria-label="Scenario controls">
+  <div>
+    <div class="field" aria-label="Toggle runners on base">
+      <button type="button" class="base b2" data-base="2" aria-label="Runner on second" aria-pressed="true"><span>2B</span></button>
+      <button type="button" class="base b3" data-base="4" aria-label="Runner on third" aria-pressed="false"><span>3B</span></button>
+      <button type="button" class="base b1" data-base="1" aria-label="Runner on first" aria-pressed="false"><span>1B</span></button>
+      <div class="home" aria-hidden="true"></div>
+    </div>
+    <div class="out-row" aria-label="Outs"><span>Outs</span><button data-outs="0" aria-pressed="false">0</button><button data-outs="1" aria-pressed="true">1</button><button data-outs="2" aria-pressed="false">2</button></div>
+  </div>
+  <div>
+    <div class="selectors">
+      <label>Regressed batter wOBA<select id="woba"></select></label>
+      <label>League runs per game<select id="rpg"></select></label>
+      <label class="runner" id="runner-0">First-base Sprint Speed<select id="speed-0"></select></label>
+      <label class="runner" id="runner-1">Second-base Sprint Speed<select id="speed-1"></select></label>
+      <label class="runner" id="runner-2">Third-base Sprint Speed<select id="speed-2"></select></label>
+    </div>
+    <p class="quiet">RPG is runs per team per game by batting league and month. Sprint Speed is in ft/s.</p>
+  </div>
+</section>
+<section class="panel" aria-labelledby="result">
+  <div class="result-head"><h2 id="result">Expected runs remaining</h2><div class="tabs" aria-label="Breakdown view"><button id="show-table" aria-pressed="true">Table</button><button id="show-graph" aria-pressed="false">Graph</button></div></div>
+  <div class="score" aria-live="polite">
+    <div><span>Observed 2025 RE24</span><strong id="empirical"></strong></div>
+    <div><span>Model prediction</span><strong id="prediction"></strong></div>
+    <div><span>Difference</span><strong id="difference"></strong></div>
+  </div>
+  <table id="table"><thead><tr><th scope="col">Source of difference</th><th scope="col">Runs</th></tr></thead><tbody id="terms"></tbody></table>
+  <div id="graph" class="plot" aria-label="Signed contributions to the difference in runs" hidden></div>
+  <h2 style="margin-top:20px;margin-bottom:0">What one step adds</h2><p id="marginal" class="quiet"></p><p id="context" class="quiet"></p>
+</section>
+<p class="quiet">Fitted on 2022–24. Observed RE24 averages eligible 2025 plate appearance starts in the selected state. Full-season batter wOBA makes this a retrospective model.</p>
+</main>
+<script id="data" type="application/json">{"beta":[-0.05787600643894552,0.04685889217486725,-0.09402815761078892,0.21670121417840707,1.3072738164255135,0.6585104758735986,1.6830107140931239,0.7114490765413835,-0.1552180206620838,-0.10708254064822523,-0.1513276972525176,-0.011513735705503628,0.6769117067066464,0.5571804793900605,0.4614962323649306,0.16451863729150373,-0.1608093767274929,-0.28986950712776777,-0.3471735971323774,-0.6319356045883666,-0.19800941670632752,-0.49918051374868627,-0.24610314892031665,-0.9456772436773319,0.017204823330794726,0.02632592416886441,0.0376011941488127,0.039401482468832266,0.0012976114831088972,0.03650833346409497,0.009663016321780404,0.05073613542989487,0.013001502293742234,0.01979321095090769,0.026051499177978166,0.029584942964734608,0.00967190993111422,0.019722091861261948,0.029755618445422904,0.044890321474024664,0.00804680372326061,0.016013452818708918,0.020849205283550942,0.03387463975223054,0.01760299222841645,0.03159412280345339,0.026058018778911146,0.05431910920864247,0.024111679612812797,0.02804138376404275,0.015402617142442787,0.04502019115194673,0.01663084002683172,0.028432840187741552,-0.03420238993947103,-0.017812136421784815,0.015557158021418993,0.026236879881509037,0.012582438871213575,0.04157960643393552,0.012551585649481108,0.04530126284377817,-0.007446764213867705,0.030303226104867784,0.007034239986834938,0.017581918448793133,-0.0047867592432958884,0.026643404276800845,0.0038910055711016754,0.0005125077069903254,-0.008013025427194655,0.01319838037711835,0.017170042505947003,0.011652744305783835,0.007831558925266768],"rpg_reference":4.446290671609203,"speed_reference":27.377256647564845,"train_rpg":[4.0,4.25,4.75,4.5],"rpg_low":3.75,"rpg_high":5.0,"rpg_unit":0.25,"observed":[[0.5055046305046305,42328.0],[0.9026284348864994,10044.0],[1.1725055432372506,2255.0],[1.617398308497785,2483.0],[1.2548262548262548,259.0],[1.8473748473748477,819.0],[2.0174081237911023,517.0],[2.5182370820668694,658.0],[0.2701832026292668,30731.0],[0.5259367160313992,12357.0],[0.6714393368500376,3981.0],[0.973473587925909,4373.0],[0.9139878366637706,1151.0],[1.2342245989304812,1870.0],[1.4231738035264485,1191.0],[1.6337535014005602,1428.0],[0.1054701905347264,24405.0],[0.2311739301138594,12735.0],[0.3310331608203948,5217.0],[0.4667560835409082,5219.0],[0.3411483253588517,2090.0],[0.4891952309985097,2684.0],[0.627906976744186,1290.0],[0.7640765765765766,1776.0]]}</script>
+<script>
+const model = JSON.parse(document.getElementById("data").textContent);
+const $ = id => document.getElementById(id);
+const baseNames = ["First", "Second", "Third"];
+const baseButtons = [...document.querySelectorAll("[data-base]")];
+const outButtons = [...document.querySelectorAll("[data-outs]")];
+let outs = 1, bases = 2;
+const signed = x => Math.abs(x) < .0005 ? "0.000" : (x < 0 ? "−" : "+") + Math.abs(x).toFixed(3);
+function option(select, value, label) {
+  const entry = document.createElement("option");
+  entry.value = value;
+  entry.textContent = label;
+  select.append(entry);
+}
+for (let value = 230; value <= 420; value += 10) {
+  option($("woba"), value / 1000, "." + value);
+}
+$("woba").value = ".32".replace(/^\./, "0.");
+const trainingLow = Math.min(...model.train_rpg);
+const trainingHigh = Math.max(...model.train_rpg);
+for (let rpg = model.rpg_low; rpg <= model.rpg_high; rpg += model.rpg_unit) {
+  const outside = rpg < trainingLow || rpg > trainingHigh;
+  option($("rpg"), rpg, rpg.toFixed(2) + (outside ? " · extrapolated" : ""));
+}
+$("rpg").value = "4.5";
+for (let i = 0; i < 3; i++) {
+  for (let value = 23; value <= 31; value += 1) option($(`speed-${i}`), value, value.toFixed(0));
+  $(`speed-${i}`).value = "28";
+}
+function calculate(outs, bases, woba, rpg, speeds) {
+  const i = outs * 8 + bases;
+  const [empirical, count] = model.observed[i];
+  const beta = model.beta;
+  // 75 terms: beta[i] intercept, beta[24 + i] wOBA slope per .010, beta[48 + i] per 0.25 team RPG,
+  // beta[72 + base] per ft/s of runner speed.
+  const rpgSteps = (rpg - model.rpg_reference) / model.rpg_unit;
+  const slope = beta[24 + i];
+  const terms = [
+    ["Model reference vs. observed RE24", beta[i] + 32 * slope - empirical],
+    ["Batter wOBA", 100 * (woba - .320) * slope],
+    ["Run environment", beta[48 + i] * rpgSteps]
+  ];
+  const marginal = [["Batter +.010 wOBA", slope]];
+  for (let base = 0; base < 3; base++) {
+    if (!(bases & (1 << base))) continue;
+    const speedSlope = beta[72 + base];
+    terms.push([baseNames[base] + "-base runner", speedSlope * (speeds[base] - model.speed_reference)]);
+    marginal.push([baseNames[base] + " base +1 ft/s", speedSlope]);
+  }
+  const difference = terms.reduce((total, [, value]) => total + value, 0);
+  return { empirical, count, terms, marginal, difference, prediction: empirical + difference };
+}
+function render() {
+  baseButtons.forEach(button => button.setAttribute("aria-pressed", Boolean(bases & Number(button.dataset.base))));
+  outButtons.forEach(button => button.setAttribute("aria-pressed", Number(button.dataset.outs) === outs));
+  const speeds = baseNames.map((_, i) => {
+    $(`runner-${i}`).hidden = !(bases & (1 << i));
+    return Number($(`speed-${i}`).value);
+  });
+  const result = calculate(outs, bases, Number($("woba").value), Number($("rpg").value), speeds);
+  $("empirical").textContent = result.empirical.toFixed(3);
+  $("prediction").textContent = result.prediction.toFixed(3);
+  $("difference").textContent = signed(result.difference);
+  const domain = Math.max(.05, ...result.terms.map(([, value]) => Math.abs(value)));
+  $("terms").replaceChildren();
+  $("graph").replaceChildren();
+  for (const [name, value] of result.terms) {
+    const row = document.createElement("tr");
+    for (const item of [name, signed(value)]) {
+      const cell = document.createElement("td");
+      cell.textContent = item;
+      row.append(cell);
+    }
+    $("terms").append(row);
+    const mark = document.createElement("div");
+    mark.className = "plot-row";
+    const label = document.createElement("span");
+    label.textContent = name;
+    const track = document.createElement("span");
+    track.className = "track";
+    track.setAttribute("aria-hidden", "true");
+    const bar = document.createElement("span");
+    bar.className = value < 0 ? "bar negative" : "bar";
+    const width = Math.abs(value) / domain * 50;
+    bar.style.width = width + "%";
+    bar.style.left = (value < 0 ? 50 - width : 50) + "%";
+    track.append(bar);
+    const amount = document.createElement("span");
+    amount.className = "plot-value";
+    amount.textContent = signed(value);
+    mark.append(label, track, amount);
+    $("graph").append(mark);
+  }
+  $("marginal").textContent = result.marginal.map(([name, value]) =>
+    name + " = " + (value > 0 ? "+" : "") + value.toFixed(6) + " runs"
+  ).join(" · ");
+  $("context").textContent = "Breakdown uses .320 wOBA, " + model.rpg_reference.toFixed(3) +
+    " team RPG and " + model.speed_reference.toFixed(3) + " ft/s as display references. Training RPG span " +
+    trainingLow.toFixed(3) + "–" + trainingHigh.toFixed(3) + ". Observed sample " +
+    result.count.toLocaleString("en-US") + " PA starts.";
+
+}
+baseButtons.forEach(button => button.addEventListener("click", () => { bases ^= Number(button.dataset.base); render(); }));
+outButtons.forEach(button => button.addEventListener("click", () => { outs = Number(button.dataset.outs); render(); }));
+document.querySelectorAll("select").forEach(select => select.addEventListener("change", render));
+function showGraph(show) {
+  $("table").hidden = show;
+  $("graph").hidden = !show;
+  $("show-table").setAttribute("aria-pressed", !show);
+  $("show-graph").setAttribute("aria-pressed", show);
+}
+$("show-table").addEventListener("click", () => showGraph(false));
+$("show-graph").addEventListener("click", () => showGraph(true));
+render();
+</script>
+</body></html>

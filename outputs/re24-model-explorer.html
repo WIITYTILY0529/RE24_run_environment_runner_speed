@@ -1,0 +1,302 @@
+<title>RE24 Model Explorer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column of scorecard panels; inputs and result sit side by side from 760px. */
+:root {
+  --bg: #eef1ec; --surface: #ffffff; --ink: #17211c; --muted: #55655b; --line: #d4dcd5;
+  --accent: #1d6b4a; --accent-ink: #ffffff; --accent-soft: #e1eee6; --neg: #a4493a; --base: #e7ece8; --plate: #6f8077;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1512; --surface: #18201c; --ink: #e3ebe5; --muted: #9caca2; --line: #2c3832;
+  --accent: #53b689; --accent-ink: #07110c; --accent-soft: #1d2d25; --neg: #e07d66; --base: #243029; --plate: #8a9a91; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1512; --surface: #18201c; --ink: #e3ebe5; --muted: #9caca2; --line: #2c3832;
+  --accent: #53b689; --accent-ink: #07110c; --accent-soft: #1d2d25; --neg: #e07d66; --base: #243029; --plate: #8a9a91; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body) }
+.wrap { max-width: 1000px; margin: 0 auto; padding-block: 28px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 16px }
+h1, h2, p { margin: 0 }
+.eyebrow { font: 500 12px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+h1 { font: 700 clamp(2.2rem, 7vw, 3.4rem)/1 var(--display); letter-spacing: .01em; margin-top: 6px; text-wrap: balance }
+h2 { font: 600 1.35rem/1.1 var(--display); letter-spacing: .02em }
+.intro { color: var(--muted); max-width: 65ch; margin-top: 8px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0 }
+button, select { font: inherit; color: var(--ink) }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px }
+.models { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
+.model { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; cursor: pointer;
+  display: grid; gap: 6px; align-content: start }
+.model[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft) }
+.model .terms { font: 700 1.9rem/1 var(--display) }
+.model .terms small { font: 500 12px var(--mono); color: var(--muted); letter-spacing: .06em; margin-left: 4px }
+.model .name { font-weight: 600 }
+.model .rmse { font: 500 12px var(--mono); color: var(--muted) }
+.grid2 { display: grid; grid-template-columns: 1fr; gap: 16px }
+@media (min-width: 760px) { .grid2 { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr) } }
+.inputs { display: grid; gap: 16px }
+.field { position: relative; width: 220px; height: 170px; margin: 0 auto }
+.bag { position: absolute; width: 46px; height: 46px; transform: rotate(45deg); background: var(--base); border: 1px solid var(--plate);
+  border-radius: 4px; cursor: pointer; padding: 0 }
+.bag span { display: block; transform: rotate(-45deg); font: 600 13px var(--mono) }
+.bag[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+.b1 { left: 150px; top: 62px } .b2 { left: 87px; top: 10px } .b3 { left: 24px; top: 62px }
+.plate { position: absolute; left: 93px; top: 122px; width: 34px; height: 32px; background: var(--plate);
+  clip-path: polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%) }
+.outs { display: flex; gap: 8px; align-items: center; justify-content: center }
+.outs > span { font-weight: 600; margin-right: 4px }
+.seg { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; min-width: 44px; min-height: 40px; cursor: pointer }
+.seg[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+.selectors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px }
+label { display: grid; gap: 4px; font-weight: 600; font-size: .9rem }
+select { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface) }
+.note { color: var(--muted); font-size: .85rem }
+.score { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; background: var(--accent-soft); border-radius: 10px; padding: 12px; margin: 12px 0 14px }
+.score span { display: block; color: var(--muted); font-size: .8rem }
+.score strong { font: 500 clamp(1.25rem, 4vw, 1.8rem)/1.2 var(--mono); font-variant-numeric: tabular-nums }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap }
+.tabs { display: flex; gap: 6px }
+.tabs .seg { padding: 0 12px }
+table { width: 100%; border-collapse: collapse; font-size: .92rem }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-weight: 600; color: var(--muted); font-size: .8rem }
+td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap }
+.plot { display: grid; gap: 6px }
+.plot-row { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(80px, 1.3fr) 64px; gap: 8px; align-items: center; font-size: .86rem; min-height: 32px }
+.track { position: relative; height: 16px; background: var(--base); border-radius: 3px }
+.track::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--plate) }
+.bar { position: absolute; top: 0; bottom: 0; background: var(--accent); border-radius: 2px }
+.bar.negative { background: var(--neg) }
+.plot-value { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums }
+.marginal { margin-top: 14px; display: grid; gap: 4px }
+.scroll { overflow-x: auto }
+tr.current td { background: var(--accent-soft) }
+tr.current td:first-child { font-weight: 600 }
+footer { color: var(--muted); font-size: .85rem; display: grid; gap: 6px; max-width: 75ch }
+@media (max-width: 620px) { .models { grid-template-columns: 1fr } }
+@media (max-width: 380px) { .selectors { grid-template-columns: 1fr } .plot-row { grid-template-columns: 1fr 70px 56px } }
+@media (prefers-reduced-motion: no-preference) { .model, .seg, .bag { transition: background-color .15s, border-color .15s } }
+</style>
+
+<main class="wrap">
+  <header>
+    <p class="eyebrow" id="eyebrow">Expected runs to the end of the half-inning</p>
+    <h1>RE24 Model Explorer</h1>
+    <p class="intro">Pick a model, set the base-out state, batter, scoring environment and runner speeds, and compare the prediction with what actually happened in that state.</p>
+  </header>
+
+  <section class="models" id="models" aria-label="Model"></section>
+
+  <div class="grid2">
+    <section class="panel inputs" aria-label="Situation">
+      <div>
+        <div class="field" aria-label="Runners on base">
+          <button type="button" class="bag b2" data-base="2" aria-label="Runner on second" aria-pressed="false"><span>2B</span></button>
+          <button type="button" class="bag b3" data-base="4" aria-label="Runner on third" aria-pressed="false"><span>3B</span></button>
+          <button type="button" class="bag b1" data-base="1" aria-label="Runner on first" aria-pressed="false"><span>1B</span></button>
+          <div class="plate" aria-hidden="true"></div>
+        </div>
+        <div class="outs" aria-label="Outs"><span>Outs</span>
+          <button type="button" class="seg" data-outs="0" aria-pressed="false">0</button>
+          <button type="button" class="seg" data-outs="1" aria-pressed="false">1</button>
+          <button type="button" class="seg" data-outs="2" aria-pressed="false">2</button>
+        </div>
+      </div>
+      <div class="selectors">
+        <label for="woba">Batter wOBA, regressed<select id="woba"></select></label>
+        <label for="rpg">Team runs per game<select id="rpg"></select></label>
+        <label for="speed-0" id="runner-0">First-base runner, ft/s<select id="speed-0"></select></label>
+        <label for="speed-1" id="runner-1">Second-base runner, ft/s<select id="speed-1"></select></label>
+        <label for="speed-2" id="runner-2">Third-base runner, ft/s<select id="speed-2"></select></label>
+      </div>
+      <p class="note" id="input-note"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="result-title">
+      <div class="head">
+        <h2 id="result-title">Expected runs remaining</h2>
+        <div class="tabs" aria-label="Breakdown view">
+          <button type="button" class="seg" id="show-table" aria-pressed="true">Table</button>
+          <button type="button" class="seg" id="show-graph" aria-pressed="false">Graph</button>
+        </div>
+      </div>
+      <div class="score" aria-live="polite">
+        <div><span id="observed-label">Observed</span><strong id="observed"></strong></div>
+        <div><span>Model prediction</span><strong id="prediction"></strong></div>
+        <div><span>Difference</span><strong id="difference"></strong></div>
+      </div>
+      <table id="table"><thead><tr><th scope="col">Source of the difference</th><th scope="col" class="num">Runs</th></tr></thead><tbody id="terms"></tbody></table>
+      <div id="graph" class="plot" aria-label="Signed contributions to the difference, in runs" hidden></div>
+      <div class="marginal">
+        <h2>What one step adds</h2>
+        <p id="marginal"></p>
+        <p class="note" id="context"></p>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="compare-title">
+    <h2 id="compare-title">All three models, same situation</h2>
+    <div class="scroll" style="margin-top:10px">
+      <table>
+        <thead><tr><th scope="col">Model</th><th scope="col" class="num">Prediction</th><th scope="col" class="num">+.010 wOBA</th><th scope="col" class="num" id="speed-head">+1 ft/s runner</th><th scope="col" class="num">2025 RMSE</th></tr></thead>
+        <tbody id="compare"></tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:10px">In the final model the wOBA and speed values do not change with RPG. Switch RPG between 4.00 and 4.75 to see the other two models change.</p>
+  </section>
+
+  <footer id="footer"></footer>
+</main>
+
+<script id="data" type="application/json">{"models":[{"id":"final_75","label":"Final: one wOBA slope per state","terms":75,"rmse":0.9800485730895283,"intercept":[-0.05787600643894552,0.04685889217486725,-0.09402815761078892,0.21670121417840707,1.3072738164255135,0.6585104758735986,1.6830107140931239,0.7114490765413835,-0.1552180206620838,-0.10708254064822523,-0.1513276972525176,-0.011513735705503628,0.6769117067066464,0.5571804793900605,0.4614962323649306,0.16451863729150373,-0.1608093767274929,-0.28986950712776777,-0.3471735971323774,-0.6319356045883666,-0.19800941670632752,-0.49918051374868627,-0.24610314892031665,-0.9456772436773319],"woba_low":[0.017204823330794726,0.02632592416886441,0.0376011941488127,0.039401482468832266,0.0012976114831088972,0.03650833346409497,0.009663016321780404,0.05073613542989487,0.013001502293742234,0.01979321095090769,0.026051499177978166,0.029584942964734608,0.00967190993111422,0.019722091861261948,0.029755618445422904,0.044890321474024664,0.00804680372326061,0.016013452818708918,0.020849205283550942,0.03387463975223054,0.01760299222841645,0.03159412280345339,0.026058018778911146,0.05431910920864247],"woba_high":[0.017204823330794726,0.02632592416886441,0.0376011941488127,0.039401482468832266,0.0012976114831088972,0.03650833346409497,0.009663016321780404,0.05073613542989487,0.013001502293742234,0.01979321095090769,0.026051499177978166,0.029584942964734608,0.00967190993111422,0.019722091861261948,0.029755618445422904,0.044890321474024664,0.00804680372326061,0.016013452818708918,0.020849205283550942,0.03387463975223054,0.01760299222841645,0.03159412280345339,0.026058018778911146,0.05431910920864247],"rpg":[0.024111679612812797,0.02804138376404275,0.015402617142442787,0.04502019115194673,0.01663084002683172,0.028432840187741552,-0.03420238993947103,-0.017812136421784815,0.015557158021418993,0.026236879881509037,0.012582438871213575,0.04157960643393552,0.012551585649481108,0.04530126284377817,-0.007446764213867705,0.030303226104867784,0.007034239986834938,0.017581918448793133,-0.0047867592432958884,0.026643404276800845,0.0038910055711016754,0.0005125077069903254,-0.008013025427194655,0.01319838037711835],"speed":[0.017170042505947003,0.011652744305783835,0.007831558925266768],"speed_rpg":0.0},{"id":"woba_rpg_interaction_99","label":"wOBA slope changes with RPG","terms":99,"rmse":0.9800836570404953,"intercept":[-0.06079765329499783,0.039990962038992064,-0.10148794670820335,0.22408610615094743,1.2164851899693432,0.6255789457861185,1.6536575970101888,0.7186995146876572,-0.1586454485529587,-0.12305529387952946,-0.15574262183212795,-0.016117632216984083,0.5844303988359105,0.5570347935085347,0.45935821239015506,0.16152452410213763,-0.1623944546605325,-0.2919549330992704,-0.3418978112893643,-0.6249627993777475,-0.20450124985273388,-0.49915773305564765,-0.3075235876441542,-0.947206523745849],"woba_low":[0.004578552042888373,0.009189318134853576,0.018403265258014743,0.05056295114252594,0.009238390418169583,0.08487406314321291,1e-06,0.06099043123366896,0.008425679808830432,0.0008303846682833904,0.0125055434160527,0.013394564396949082,1e-06,0.019869358251398087,0.03438435604805559,0.03204644213339004,0.005896671255593119,0.010478885530088411,0.03410102885782131,0.048779087446111036,0.002590551073543057,0.026154654287196544,1e-06,0.05803541206723567],"woba_high":[0.027362787157436286,0.04027656990669226,0.05320874935702247,0.03014712640596144,1e-06,1e-06,0.018937276488951146,0.04220864510925106,0.01681523591178724,0.03569089910368922,0.03702790952037216,0.04266119857249755,0.02241392990902505,0.019614218333757885,0.026202936955984937,0.05523001086757298,0.009837744871972587,0.020511412964042908,0.010056541041487455,0.021688155165111134,0.02985350814758407,0.03590213450314117,0.05012204706787367,0.05145853452464429],"rpg":[-0.12410101909590135,-0.1747142304393601,-0.21147220254309207,0.17803809796161543,0.07641847361933464,0.5843401929970846,-0.1583057071581131,0.1044290615651624,-0.03907584577494905,-0.2012745539915373,-0.14713727162873894,-0.14891855815469632,-0.13437469409598587,0.04696470494000234,0.045667924775586954,-0.120173236860898,-0.01861953413549726,-0.047591034081380976,0.1515845478918136,0.20208990644574762,-0.17343619493990342,-0.06275918003583028,-0.3326758911028987,0.05587830952996613],"speed":[0.017121472441175192,0.01161583569508752,0.0077355115732042345],"speed_rpg":0.0},{"id":"both_interactions_100","label":"wOBA and speed slopes change with RPG","terms":100,"rmse":0.9800847684989101,"intercept":[-0.06079765329499807,0.040553198444701524,-0.10063802687271928,0.2243809157625645,1.2189955119343763,0.6232892034869908,1.6590754600811217,0.7211435749208802,-0.15864544855297116,-0.12248756092043644,-0.15457670938792423,-0.014343123489464881,0.5850667375002798,0.556687879225448,0.4585733892487562,0.16371759194187233,-0.1623944546605413,-0.29124327910282577,-0.34085252420780676,-0.623092265777919,-0.20388417009565224,-0.49879548476461777,-0.30298313945009936,-0.9456151165915273],"woba_low":[0.004578552042888075,0.009332973089691339,0.01858465841684257,0.05088677116916939,0.009065609202408016,0.08501530702293279,1e-06,0.06155303125729206,0.008425679808831202,0.0011011691374317595,0.012859699058020313,0.013983115742363134,1e-06,0.020585549526678522,0.035350438777728095,0.03307252243207069,0.005896671255593223,0.010751107698535045,0.03442325902142316,0.04930999354003751,0.0029876146365699074,0.026896401199231812,1e-06,0.05876846994215951],"woba_high":[0.027362787157436397,0.0401298828041281,0.05301938251330218,0.029867379583820547,1e-06,1e-06,0.018644532395599975,0.04162639490212344,0.016815235911784132,0.035441409664388746,0.036678531401046155,0.042091550752482464,0.022379377741666456,0.019059218028471697,0.025476130699401158,0.05428718231752594,0.009837744871972837,0.020252964351084146,0.009742167068837015,0.021158274046176873,0.02950265400352084,0.03529085538001303,0.04986112036979192,0.05077395424198053],"rpg":[-0.12410101909590396,-0.17298527827943982,-0.2092925546146134,0.18192438066790456,0.0730077380604375,0.5847910797113949,-0.15609950746683598,0.11226015681392822,-0.039075845774948575,-0.1978940089192141,-0.1429084799948215,-0.1411601343843244,-0.13563303073550426,0.05491225534752169,0.056660182962927824,-0.1068518213471049,-0.018619534135496905,-0.04399417611805131,0.15535852229560898,0.20949063369738755,-0.1695814921499648,-0.0540039570551523,-0.3308400224758762,0.06561918538956303],"speed":[0.01711321824647489,0.011531328097783206,0.007606126061426438],"speed_rpg":0.003548823473247087}],"rpg_reference":4.446290671609203,"speed_reference":27.377256647564845,"rpg_low":3.75,"rpg_high":5.0,"rpg_unit":0.25,"train_rpg":[4.0,4.25,4.5,4.75],"train_seasons":[2022,2024],"valid_season":2025,"observed":[[0.5055046305046305,42328],[0.9026284348864994,10044],[1.1725055432372506,2255],[1.617398308497785,2483],[1.2548262548262548,259],[1.8473748473748475,819],[2.0174081237911023,517],[2.5182370820668694,658],[0.27018320262926687,30731],[0.5259367160313992,12357],[0.6714393368500376,3981],[0.973473587925909,4373],[0.9139878366637706,1151],[1.2342245989304812,1870],[1.4231738035264483,1191],[1.6337535014005602,1428],[0.10547019053472649,24405],[0.23117393011385945,12735],[0.33103316082039486,5217],[0.4667560835409082,5219],[0.3411483253588517,2090],[0.4891952309985097,2684],[0.627906976744186,1290],[0.7640765765765766,1776]]}</script>
+<script>
+const D = JSON.parse(document.getElementById("data").textContent);
+const $ = id => document.getElementById(id);
+const BASES = ["First", "Second", "Third"];
+const HASHES = ["final-75", "woba-rpg-99", "both-100"];
+const view = { model: Math.max(0, HASHES.indexOf(location.hash.slice(1))), outs: 1, bases: 2 };
+const signed = x => Math.abs(x) < .0005 ? "0.000" : (x < 0 ? "−" : "+") + Math.abs(x).toFixed(3);
+const fine = x => (x < 0 ? "−" : "+") + Math.abs(x).toFixed(4);
+
+function wobaSlope(m, i, rpg) {
+  const w = (rpg - D.rpg_low) / (D.rpg_high - D.rpg_low);
+  return (1 - w) * m.woba_low[i] + w * m.woba_high[i];
+}
+function speedSlope(m, base, rpg) {
+  return m.speed[base] + (rpg - D.rpg_reference) / D.rpg_unit * m.speed_rpg;
+}
+function predict(m, outs, bases, woba, rpg, speeds) {
+  const i = outs * 8 + bases;
+  let total = m.intercept[i] + 100 * woba * wobaSlope(m, i, rpg) + m.rpg[i] * (rpg - D.rpg_reference) / D.rpg_unit;
+  for (let b = 0; b < 3; b++) if (bases & (1 << b)) total += speedSlope(m, b, rpg) * (speeds[b] - D.speed_reference);
+  return total;
+}
+function breakdown(m, outs, bases, woba, rpg, speeds) {
+  const i = outs * 8 + bases;
+  const [observed, count] = D.observed[i];
+  const slope = wobaSlope(m, i, rpg), refSlope = wobaSlope(m, i, D.rpg_reference);
+  const terms = [
+    ["Model at .320 wOBA, average RPG and speed, minus observed", m.intercept[i] + 32 * refSlope - observed],
+    ["Batter wOBA vs .320", 100 * (woba - .320) * slope],
+    ["Run environment", m.rpg[i] * (rpg - D.rpg_reference) / D.rpg_unit + 32 * (slope - refSlope)],
+  ];
+  for (let b = 0; b < 3; b++) if (bases & (1 << b)) {
+    terms.push([BASES[b] + "-base runner speed", speedSlope(m, b, rpg) * (speeds[b] - D.speed_reference)]);
+  }
+  return { observed, count, terms, prediction: predict(m, outs, bases, woba, rpg, speeds) };
+}
+
+function option(select, value, text) {
+  const o = document.createElement("option"); o.value = value; o.textContent = text; select.append(o);
+}
+for (let v = 230; v <= 420; v += 10) option($("woba"), (v / 1000).toFixed(3), "." + v);
+$("woba").value = "0.350";
+const trainLow = Math.min(...D.train_rpg), trainHigh = Math.max(...D.train_rpg);
+for (let r = D.rpg_low; r <= D.rpg_high + 1e-9; r += D.rpg_unit) {
+  const outside = r < trainLow - 1e-9 || r > trainHigh + 1e-9;
+  option($("rpg"), r.toFixed(2), r.toFixed(2) + (outside ? " · outside training data" : ""));
+}
+$("rpg").value = "4.50";
+for (let b = 0; b < 3; b++) {
+  for (let s = 23; s <= 31; s++) option($("speed-" + b), s, String(s));
+  $("speed-" + b).value = String(Math.round(D.speed_reference));
+}
+
+function readInputs() {
+  return { woba: Number($("woba").value), rpg: Number($("rpg").value), speeds: [0, 1, 2].map(b => Number($("speed-" + b).value)) };
+}
+function renderModels() {
+  $("models").replaceChildren(...D.models.map((m, k) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "model"; b.setAttribute("aria-pressed", k === view.model);
+    b.innerHTML = '<span class="terms"></span><span class="name"></span><span class="rmse"></span>';
+    b.querySelector(".terms").textContent = m.terms;
+    const small = document.createElement("small"); small.textContent = "TERMS"; b.querySelector(".terms").append(small);
+    b.querySelector(".name").textContent = m.label;
+    b.querySelector(".rmse").textContent = D.valid_season + " RMSE " + m.rmse.toFixed(6);
+    b.addEventListener("click", () => { view.model = k; history.replaceState(null, "", "#" + HASHES[k]); render(); });
+    return b;
+  }));
+}
+function render() {
+  document.querySelectorAll("[data-base]").forEach(el => el.setAttribute("aria-pressed", Boolean(view.bases & Number(el.dataset.base))));
+  document.querySelectorAll("[data-outs]").forEach(el => el.setAttribute("aria-pressed", Number(el.dataset.outs) === view.outs));
+  for (let b = 0; b < 3; b++) $("runner-" + b).hidden = !(view.bases & (1 << b));
+  [...$("models").children].forEach((el, k) => el.setAttribute("aria-pressed", k === view.model));
+  const { woba, rpg, speeds } = readInputs();
+  const m = D.models[view.model];
+  const r = breakdown(m, view.outs, view.bases, woba, rpg, speeds);
+  $("observed-label").textContent = "Observed " + D.valid_season;
+  $("observed").textContent = r.observed.toFixed(3);
+  $("prediction").textContent = r.prediction.toFixed(3);
+  $("difference").textContent = signed(r.prediction - r.observed);
+
+  const domain = Math.max(.05, ...r.terms.map(([, v]) => Math.abs(v)));
+  $("terms").replaceChildren(); $("graph").replaceChildren();
+  for (const [name, value] of r.terms) {
+    const tr = document.createElement("tr");
+    const a = document.createElement("td"); a.textContent = name;
+    const v = document.createElement("td"); v.className = "num"; v.textContent = signed(value);
+    tr.append(a, v); $("terms").append(tr);
+    const row = document.createElement("div"); row.className = "plot-row";
+    const label = document.createElement("span"); label.textContent = name;
+    const track = document.createElement("span"); track.className = "track"; track.setAttribute("aria-hidden", "true");
+    const bar = document.createElement("span"); bar.className = value < 0 ? "bar negative" : "bar";
+    const width = Math.abs(value) / domain * 50;
+    bar.style.width = width + "%"; bar.style.left = (value < 0 ? 50 - width : 50) + "%";
+    track.append(bar);
+    const amount = document.createElement("span"); amount.className = "plot-value"; amount.textContent = signed(value);
+    row.append(label, track, amount); $("graph").append(row);
+  }
+  const i = view.outs * 8 + view.bases;
+  const steps = ["+.010 wOBA: " + fine(wobaSlope(m, i, rpg)) + " runs"];
+  for (let b = 0; b < 3; b++) if (view.bases & (1 << b)) steps.push(BASES[b] + " base +1 ft/s: " + fine(speedSlope(m, b, rpg)) + " runs");
+  $("marginal").textContent = steps.join(" · ");
+  $("context").textContent = "Observed is the average of " + r.count.toLocaleString("en-US") + " eligible " + D.valid_season +
+    " PA starts in this state. References: .320 wOBA, " + D.rpg_reference.toFixed(3) + " team RPG, " + D.speed_reference.toFixed(2) + " ft/s.";
+
+  const occupied = [0, 1, 2].filter(b => view.bases & (1 << b));
+  $("speed-head").textContent = occupied.length ? "+1 ft/s, " + occupied.map(b => BASES[b].toLowerCase()).join(" / ") : "+1 ft/s runner";
+  $("compare").replaceChildren(...D.models.map((mm, k) => {
+    const tr = document.createElement("tr"); if (k === view.model) tr.className = "current";
+    const cells = [mm.terms + " · " + mm.label, predict(mm, view.outs, view.bases, woba, rpg, speeds).toFixed(3),
+      fine(wobaSlope(mm, i, rpg)), occupied.length ? occupied.map(b => fine(speedSlope(mm, b, rpg))).join(" / ") : "no runner",
+      mm.rmse.toFixed(6)];
+    cells.forEach((text, c) => { const td = document.createElement("td"); if (c) td.className = "num"; td.textContent = text; tr.append(td); });
+    return tr;
+  }));
+}
+
+document.querySelectorAll("[data-base]").forEach(el => el.addEventListener("click", () => { view.bases ^= Number(el.dataset.base); render(); }));
+document.querySelectorAll("[data-outs]").forEach(el => el.addEventListener("click", () => { view.outs = Number(el.dataset.outs); render(); }));
+document.querySelectorAll("select").forEach(el => el.addEventListener("change", render));
+function showGraph(show) {
+  $("table").hidden = show; $("graph").hidden = !show;
+  $("show-table").setAttribute("aria-pressed", !show); $("show-graph").setAttribute("aria-pressed", show);
+}
+$("show-table").addEventListener("click", () => showGraph(false));
+$("show-graph").addEventListener("click", () => showGraph(true));
+window.addEventListener("hashchange", () => { const k = HASHES.indexOf(location.hash.slice(1)); if (k >= 0) { view.model = k; render(); } });
+
+$("eyebrow").textContent = "Fitted on " + D.train_seasons.join("–") + " · checked on " + D.valid_season;
+$("input-note").textContent = "RPG is runs per team per game for the batting team's league and month. Values outside " +
+  trainLow.toFixed(2) + "–" + trainHigh.toFixed(2) + " are outside the training data. For a runner with unknown speed, use " +
+  Math.round(D.speed_reference) + " ft/s, the training average.";
+$("footer").innerHTML = "";
+[
+  "Each model is fitted by least squares on " + D.train_seasons.join("–") + " plate-appearance starts and predicts runs from that PA to the end of the half-inning. The wOBA slopes are kept positive.",
+  "Batter wOBA is the full-season FanGraphs-style regressed value, rounded to .010. RPG is rounded to 0.25. Both use information from after the PA, so the " + D.valid_season + " check is retrospective.",
+  "In the " + D.valid_season + " check, the three models are within 0.00004 RMSE of each other, and the bootstrap shows no measurable difference."
+].forEach(t => { const p = document.createElement("p"); p.textContent = t; $("footer").append(p); });
+
+renderModels();
+render();
+</script>

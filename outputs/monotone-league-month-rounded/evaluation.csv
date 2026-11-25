@@ -1,0 +1,4 @@
+model,n_2024,rmse_2024,negative_predictions
+constant_woba_slope,171446,0.9730458131017745,0
+unconstrained,171446,0.973001701237053,0
+positive_woba,171446,0.9730035617291276,0

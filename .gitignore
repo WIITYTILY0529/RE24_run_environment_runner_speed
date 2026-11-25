@@ -1,0 +1,42 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Raw Statcast pitches live in 07_Datasets; never copy them here
+data/statcast/
+*.parquet
+
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.swp
+*~
+
+# Temporary and local-only files
+*.tmp
+*.log
+/tmp/
+*.bak
+*.local
+*.local.*
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
