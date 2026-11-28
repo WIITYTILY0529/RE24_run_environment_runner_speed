@@ -30,7 +30,8 @@ RUNNER = [72, 73, 74]             # centered Sprint Speed on first, second, thir
 RUNNER_RPG = [75]                 # (team RPG - reference) / 0.25 x summed centered speed
 WOBA_LOW = list(range(76, 100))   # state x wOBA weighted toward RPG_LOW
 WOBA_HIGH = list(range(100, 124)) # state x wOBA weighted toward RPG_HIGH
-N_COLUMNS = 124
+RUNNER_RPG_BASE = [124, 125, 126] # (team RPG - reference) / 0.25 x centered speed, per base
+N_COLUMNS = 127
 
 FINAL = "final_75"
 # name: (columns, columns bounded below by MIN_WOBA_EFFECT)
@@ -44,12 +45,16 @@ MODELS = {
     "re24_table_24": (STATE, []),
     # Differs in two respects; kept to show both RPG interactions together.
     "both_interactions_100": (STATE + WOBA_LOW + WOBA_HIGH + RPG + RUNNER + RUNNER_RPG, WOBA_LOW + WOBA_HIGH),
+    # The speed x RPG term with its own coefficient per base instead of one shared one.
+    "with_speed_rpg_by_base_78": (STATE + WOBA + RPG + RUNNER + RUNNER_RPG_BASE, WOBA),
+    "both_interactions_by_base_102": (STATE + WOBA_LOW + WOBA_HIGH + RPG + RUNNER + RUNNER_RPG_BASE,
+                                      WOBA_LOW + WOBA_HIGH),
 }
 # Models offered in the HTML explorer, with their labels.
 EXPLORER = {
     FINAL: "Final: one wOBA slope per state",
     "woba_rpg_interaction_99": "wOBA slope changes with RPG",
-    "both_interactions_100": "wOBA and speed slopes change with RPG",
+    "both_interactions_by_base_102": "wOBA slope and each base's speed slope change with RPG",
 }
 EXPLORER_HTML = "re24-model-explorer.html"
 
@@ -70,6 +75,7 @@ def full_design(rows, rpg_reference, speed_reference):
     x = np.column_stack((
         state, state_woba, state * rpg[:, None], runner, rpg * runner.sum(axis=1),
         state_woba * (1 - high_weight[:, None]), state_woba * high_weight[:, None],
+        rpg[:, None] * runner,
     ))
     if x.shape[1] != N_COLUMNS or not np.isfinite(x).all():
         raise ValueError("Unexpected or non-finite design matrix")
@@ -135,6 +141,13 @@ def leave_one_season_out(rows):
     return pd.DataFrame(folds, columns=["held_out_year", "model", "n", "rmse", "negative_predictions"])
 
 
+def speed_rpg(beta):
+    """Speed x RPG coefficient for first, second and third base (0 if the model has none)."""
+    if RUNNER_RPG_BASE[0] in beta:
+        return [beta[c] for c in RUNNER_RPG_BASE]
+    return [beta.get(RUNNER_RPG[0], 0.0)] * 3
+
+
 def explorer_data(fits, evaluation, calibration, train, valid_season, rpg_reference, speed_reference):
     """Return the explorer models in one form: the wOBA slope is a line between
     its values at RPG_LOW and RPG_HIGH, and the speed slope may change with RPG."""
@@ -147,7 +160,7 @@ def explorer_data(fits, evaluation, calibration, train, valid_season, rpg_refere
         low, high = (block(WOBA), block(WOBA)) if WOBA[0] in beta else (block(WOBA_LOW), block(WOBA_HIGH))
         models.append({"id": name, "label": label, "terms": len(columns), "rmse": float(rmse[name]),
                        "intercept": block(STATE), "woba_low": low, "woba_high": high, "rpg": block(RPG),
-                       "speed": block(RUNNER), "speed_rpg": beta.get(RUNNER_RPG[0], 0.0)})
+                       "speed": block(RUNNER), "speed_rpg": speed_rpg(beta)})
     observed = calibration[calibration.model.eq(FINAL)].sort_values(["outs", "bases"])
     return {"models": models, "rpg_reference": float(rpg_reference), "speed_reference": float(speed_reference),
             "rpg_low": RPG_LOW, "rpg_high": RPG_HIGH, "rpg_unit": RPG_UNIT,
@@ -198,6 +211,12 @@ def main(pitch_dir=None, first_season=FIRST_SEASON, valid_season=VALID_SEASON):
     effects = pd.DataFrame({"outs": np.arange(24) // 8, "bases": np.arange(24) % 8,
                             "runs_per_010_woba": final.x[24:48], "at_lower_bound": final.active_mask[24:48] != 0})
     runner = pd.DataFrame({"base": [1, 2, 3], "runs_per_fts": final.x[72:75]})
+    speed_rpg_terms = pd.DataFrame([
+        {"model": name, "base": base, "speed": beta[RUNNER[base - 1]], "speed_x_rpg": gamma}
+        for name, (columns, _) in MODELS.items() if RUNNER[0] in columns
+        for beta in [dict(zip(columns, fits[name].x))]
+        for base, gamma in zip([1, 2, 3], speed_rpg(beta))
+    ])
     seasons = rows.groupby("season").agg(
         n=("season", "size"), mean_team_rpg=("runs_per_game", lambda x: x.mean() / 2),
         min_team_rpg=("runs_per_game", lambda x: x.min() / 2), max_team_rpg=("runs_per_game", lambda x: x.max() / 2),
@@ -213,6 +232,7 @@ def main(pitch_dir=None, first_season=FIRST_SEASON, valid_season=VALID_SEASON):
     coefficients.to_csv(output / "coefficients.csv", index=False)
     effects.to_csv(output / "batter_effects.csv", index=False)
     runner.to_csv(output / "runner_effects.csv", index=False)
+    speed_rpg_terms.to_csv(output / "speed_rpg_terms.csv", index=False)
     seasons.to_csv(output / "seasons.csv")
     batters.to_csv(output / "batter_season_woba.csv", index=False, encoding="utf-8")
     np.savez(output / "fit.npz", beta=final.x, rpg_reference=rpg_reference,
@@ -237,6 +257,7 @@ def main(pitch_dir=None, first_season=FIRST_SEASON, valid_season=VALID_SEASON):
     print(loso.pivot(index="model", columns="held_out_year", values="rmse").to_string())
     print(f"wOBA slopes at the lower bound: {int(effects.at_lower_bound.sum())}/24")
     print(runner.to_string(index=False))
+    print(speed_rpg_terms.to_string(index=False))
 
 
 if __name__ == "__main__":
